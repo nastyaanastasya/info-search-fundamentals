@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request
-from sympy import true
 
 from search.search_system import process_query
 
@@ -11,7 +10,7 @@ def convert_search_result_to_links(search_result):
     if search_result is not None and search_result:
         links = []
         for item in search_result:
-            name = item.replace('.html', '')
+            name = item.replace('.html', '').replace('lemmas', '')
             link = f"{LINK_PREFIX}{name}"
             links.append(link)
         return links
@@ -19,7 +18,7 @@ def convert_search_result_to_links(search_result):
         return None
 
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         input_value = request.form['input_value']
@@ -45,4 +44,4 @@ def index():
                 </html>'''
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8000)
