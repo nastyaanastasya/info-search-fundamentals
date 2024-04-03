@@ -19,7 +19,7 @@ def convert_search_result_to_links(search_result):
         return None
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/search', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         input_value = request.form['input_value']
@@ -45,4 +45,4 @@ def index():
                 </html>'''
 
 if __name__ == '__main__':
-    app.run(debug=true)
+    app.run()
