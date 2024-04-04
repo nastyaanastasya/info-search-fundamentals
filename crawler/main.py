@@ -8,7 +8,7 @@ def start_crawler(index_file_path, base_url, url_count=100):
     urls_to_visit = [base_url]
 
     with open(index_file_path, 'w', encoding='utf-8') as index_file:
-        counter = 0
+        counter = 700008
 
         print("Crawler started")
 
