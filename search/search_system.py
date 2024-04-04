@@ -7,7 +7,7 @@ from nltk import word_tokenize
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
 
-inverted_index_path = os.path.join(current_dir, '..', 'inverted_index.txt')
+inverted_index_path = os.path.join(current_dir, '..', 'inverted_index.json')
 lemmas_tf_idf_path = os.path.join(current_dir, '..', 'classifier', 'lemmas')
 lemmas_path = os.path.join(current_dir, '..', 'tokens', 'lemmas.txt')
 
