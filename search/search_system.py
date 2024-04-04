@@ -10,14 +10,9 @@ current_dir = os.path.dirname(current_file_path)
 inverted_index_path = os.path.join(current_dir, '..', 'inverted_index.json')
 lemmas_tf_idf_path = os.path.join(current_dir, '..', 'classifier', 'lemmas')
 lemmas_path = os.path.join(current_dir, '..', 'tokens', 'lemmas.txt')
-lemmas_tf_idf_path = '../classifier/lemmas'
-lemmas_path = '../tokens/lemmas.txt'
-inverted_index_path = '../inverted_index.txt'
 
-
-LEMMAS_TFIDF = 'classifier/lemmas'
 LEMMAS_TFIDF_PATH = '../classifier/lemmas/'
-LEMMA_TOKENS_FILE = '../tokens/lemmas.txt'
+LEMMA_TOKENS_FILE = os.path.join(current_dir, '..', 'tokens', 'lemmas.txt')
 INVERTED_INDEX_FILE = 'inverted_index.json'
 
 
@@ -42,23 +37,10 @@ def load_lemma_tokens() -> Dict[str, str]:
 
 def load_doc_to_lemma_tf_idf() -> Dict[str, Dict[str, float]]:
     result = {}
-    for file_name in os.listdir(LEMMAS_TFIDF):
-        with open(LEMMAS_TFIDF_PATH + file_name, encoding='utf-8') as tf_idf_file:
+    for file_name in os.listdir(lemmas_tf_idf_path):
+        with open(os.path.join(lemmas_tf_idf_path, file_name), encoding='utf-8') as tf_idf_file:
             lines = tf_idf_file.readlines()
             result[file_name] = {data[0]: float(data[2]) for data in [line.rstrip('\n').split(' ') for line in lines]}
-    return result
-
-
-def load_lemma_to_doc_tf_idf() -> Dict[str, Dict[str, float]]:
-    result = {}
-    for file_name in os.listdir(LEMMAS_TFIDF):
-        with open(LEMMAS_TFIDF_PATH + file_name, encoding='utf-8') as tf_idf_file:
-            lines = tf_idf_file.readlines()
-            for line in lines:
-                data = line.rstrip('\n').split(' ')
-                lemma_to_docs_tf_idf = result.get(data[0], {})
-                lemma_to_docs_tf_idf[file_name] = float(data[2])
-                result[data[0]] = lemma_to_docs_tf_idf
     return result
 
 
@@ -84,9 +66,9 @@ def process_query(query: str):
     return dict(sorted(results.items(), key=lambda r: r[1], reverse=True))
 
 
-docs_list = os.listdir(LEMMAS_TFIDF)
+docs_list = os.listdir(lemmas_tf_idf_path)
 doc_to_lemma = load_doc_to_lemma_tf_idf()
-lemma_to_doc = load_lemma_to_doc_tf_idf()
+lemma_to_doc = load_doc_to_lemma_tf_idf()  # Можете использовать одну из этих функций
 doc_lengths = {doc: calculate_doc_vector_length(doc_to_lemma[doc]) for doc in docs_list}
 token_to_lemma = load_lemma_tokens()
 reverse_index = load_inverted_index()
