@@ -1,8 +1,8 @@
+import json
 import math
 import os
-
+from typing import Dict, List
 from nltk import word_tokenize
-
 
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
@@ -10,83 +10,83 @@ current_dir = os.path.dirname(current_file_path)
 inverted_index_path = os.path.join(current_dir, '..', 'inverted_index.json')
 lemmas_tf_idf_path = os.path.join(current_dir, '..', 'classifier', 'lemmas')
 lemmas_path = os.path.join(current_dir, '..', 'tokens', 'lemmas.txt')
+lemmas_tf_idf_path = '../classifier/lemmas'
+lemmas_path = '../tokens/lemmas.txt'
+inverted_index_path = '../inverted_index.txt'
 
 
-def load_lemmas():
+LEMMAS_TFIDF = 'classifier/lemmas'
+LEMMAS_TFIDF_PATH = '../classifier/lemmas/'
+LEMMA_TOKENS_FILE = '../tokens/lemmas.txt'
+INVERTED_INDEX_FILE = 'inverted_index.json'
+
+
+def load_inverted_index():
+    with open(INVERTED_INDEX_FILE, encoding='utf-8') as file:
+        json_index = file.readline()
+        index = json.loads(json_index)
+        return index
+
+
+def load_lemma_tokens() -> Dict[str, str]:
     lemmas = {}
-    with open(lemmas_path, encoding='utf-8') as file:
-        lines = file.readlines()
+    with open(LEMMA_TOKENS_FILE, encoding='utf-8') as lemma_file:
+        lines = lemma_file.readlines()
         for line in lines:
-            words = line.rstrip('\n').split(' ')
+            line = line.rstrip('\n')
+            words = line.split(' ')
             for word in words:
                 lemmas[word] = words[0]
     return lemmas
 
 
-def load_lemma_tf_idf():
+def load_doc_to_lemma_tf_idf() -> Dict[str, Dict[str, float]]:
     result = {}
-    for file_name in os.listdir(lemmas_tf_idf_path):
-        with open(os.path.join(lemmas_tf_idf_path, file_name), encoding='utf-8') as file:
-            lines = file.readlines()
-            result[file_name] = {data[0]: float(data[2]) for data
-                                 in [line.rstrip('\n').split(' ') for line in lines]}
+    for file_name in os.listdir(LEMMAS_TFIDF):
+        with open(LEMMAS_TFIDF_PATH + file_name, encoding='utf-8') as tf_idf_file:
+            lines = tf_idf_file.readlines()
+            result[file_name] = {data[0]: float(data[2]) for data in [line.rstrip('\n').split(' ') for line in lines]}
     return result
 
 
-def load_inverted_index():
+def load_lemma_to_doc_tf_idf() -> Dict[str, Dict[str, float]]:
     result = {}
-    with open(inverted_index_path, encoding='utf-8') as file:
-        lines = file.readlines()
-        for line in lines:
-            token = line.split(' ')[0].split('[')[0]
-            result[token] = [f"lemmas{num}.txt" for num in line.rstrip('\n').split(' ')[1:]]
+    for file_name in os.listdir(LEMMAS_TFIDF):
+        with open(LEMMAS_TFIDF_PATH + file_name, encoding='utf-8') as tf_idf_file:
+            lines = tf_idf_file.readlines()
+            for line in lines:
+                data = line.rstrip('\n').split(' ')
+                lemma_to_docs_tf_idf = result.get(data[0], {})
+                lemma_to_docs_tf_idf[file_name] = float(data[2])
+                result[data[0]] = lemma_to_docs_tf_idf
     return result
 
 
-def calc_vect_len(vector):
-    return math.sqrt(sum(i ** 2 for i in vector.values()))
+def calculate_doc_vector_length(doc_to_words: Dict[str, float]):
+    return math.sqrt(sum(i ** 2 for i in doc_to_words.values()))
 
 
-def calc_values(lemma_tf_idf):
-    lemmas_list = os.listdir(lemmas_tf_idf_path)
-    return {lemma: calc_vect_len(lemma_tf_idf[lemma]) for lemma in lemmas_list}
+def multiply_vectors(query_vector: List[str], doc_vector: Dict[str, float], doc_vector_len: int):
+    return sum(doc_vector.get(token, 0) for token in query_vector) / len(query_vector) / doc_vector_len
 
 
-def mult_vect(query_vector, value_vect, value_vec_len):
-    return sum(value_vect.get(token) for token in query_vector) / len(query_vector) / value_vec_len
+def merge_or(set1, set2):
+    return set1.union(set2)
 
 
-def process_query(query):
+def process_query(query: str):
     tokens = word_tokenize(query, language='russian')
-    inverted_index = load_inverted_index()
-    lemma_tf_idf = load_lemma_tf_idf()
-    values = calc_values(lemma_tf_idf)
-
-    token_lemmas = load_lemmas()
-    lemmas = [token_lemmas[token] for token in tokens if token in token_lemmas]
-
-    result = set()
+    lemmas = [token_to_lemma[token] for token in tokens if token in token_to_lemma]
+    doc_set = set()
     for lemma in lemmas:
-        result = result.union(inverted_index.get(lemma, set()))
-
-    # Избегаем KeyError с помощью проверки наличия ключа в lemma_tf_idf
-    results = {}
-    for res in result:
-        if res in lemma_tf_idf:
-            results[res] = mult_vect(lemmas, lemma_tf_idf[res], values[res])
-        else:
-            results[res] = 0.0  # или любое другое значение по умолчанию
-
-    return dict(res for res in results.items() if res[1] > 0.0)
+        doc_set = merge_or(doc_set, reverse_index.get(lemma, set()))
+    results = {doc: multiply_vectors(lemmas, doc_to_lemma[doc + '.txt'], doc_lengths[doc + '.txt']) for doc in doc_set}
+    return dict(sorted(results.items(), key=lambda r: r[1], reverse=True))
 
 
-
-# process user input with infinite loop
-# while True:
-#     input_query = input("Enter expression: ").lower()
-#     if input_query == 'quit' or input_query == 'q':
-#         exit()
-#     try:
-#         print(process_query(input_query))
-#     except Exception as e:
-#         print('An error occurred. Please, try again or "quit" to exit.')
+docs_list = os.listdir(LEMMAS_TFIDF)
+doc_to_lemma = load_doc_to_lemma_tf_idf()
+lemma_to_doc = load_lemma_to_doc_tf_idf()
+doc_lengths = {doc: calculate_doc_vector_length(doc_to_lemma[doc]) for doc in docs_list}
+token_to_lemma = load_lemma_tokens()
+reverse_index = load_inverted_index()
